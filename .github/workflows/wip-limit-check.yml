@@ -1,0 +1,64 @@
+# WIP Limit Check Workflow
+# Enforces WIP limits for 'state:build' and 'state:research' issues
+
+name: "WIP Limit Check"
+
+on:
+  issues:
+    types:
+      - labeled
+      - unlabeled
+      - opened
+      - reopened
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  wip-limit-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check WIP limits
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            const buildCount = issues.filter(issue => issue.labels.some(l => l.name === 'state:build')).length;
+            const researchCount = issues.filter(issue => issue.labels.some(l => l.name === 'state:research')).length;
+            const maxWip = 3;
+            let exceeded = false;
+            let stateLabel = null;
+            if (buildCount > maxWip) {
+              exceeded = true;
+              stateLabel = 'state:build';
+            } else if (researchCount > maxWip) {
+              exceeded = true;
+              stateLabel = 'state:research';
+            }
+            if (exceeded) {
+              github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `WIP limit reached. Current: ${stateLabel === 'state:build' ? buildCount : researchCount}. Max: ${maxWip}.`
+              });
+              github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['state:blocked']
+              });
+              github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: stateLabel
+              });
+            }
