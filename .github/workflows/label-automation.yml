@@ -33,16 +33,19 @@ jobs:
             })
 
       - name: Add 'state:done' label if issue closed and missing
-        if: github.event.action == 'closed' && !github.event.issue.labels.some(l => l.name === 'state:done')
+        if: github.event.action == 'closed'
         uses: actions/github-script@v6
         with:
           script: |
-            github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['state:done']
-            })
+            const hasDone = context.payload.issue.labels.some(l => l.name === 'state:done');
+            if (!hasDone) {
+              github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['state:done']
+              });
+            }
 
       - name: Comment if labeled 'gate:needs-approval'
         if: github.event.action == 'labeled' && github.event.label.name == 'gate:needs-approval'
