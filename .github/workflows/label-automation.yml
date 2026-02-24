@@ -1,0 +1,55 @@
+# Label Automation Workflow
+# Implements label-driven state management for issues
+
+name: "Label Automation"
+
+on:
+  issues:
+    types:
+      - labeled
+      - unlabeled
+      - closed
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  label-automation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issue if labeled 'state:done'
+        if: github.event.action == 'labeled' && github.event.label.name == 'state:done'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            })
+
+      - name: Add 'state:done' label if issue closed and missing
+        if: github.event.action == 'closed' && !github.event.issue.labels.some(l => l.name === 'state:done')
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['state:done']
+            })
+
+      - name: Comment if labeled 'gate:needs-approval'
+        if: github.event.action == 'labeled' && github.event.label.name == 'gate:needs-approval'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'Added to Decision Desk.'
+            })
