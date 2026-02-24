@@ -1,0 +1,62 @@
+name: 🔍 Repo Recon
+description: Analyze an existing repository
+title: "[Recon]: "
+labels: ["state:research"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Repository Reconnaissance
+        Use this to assess existing repos for consolidation, archival, or integration.
+
+  - type: input
+    id: repo
+    attributes:
+      label: Repository URL
+      description: Full GitHub URL
+      placeholder: "https://github.com/owner/repo"
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Current Purpose
+      description: What is this repo supposed to do?
+      placeholder: "Originally created for..."
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Current Status
+      options:
+        - Active development
+        - Maintenance mode
+        - Abandoned
+        - Unknown
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: assessment
+    attributes:
+      label: Assessment Checklist
+      options:
+        - label: Has README documentation
+        - label: Has recent commits (< 6 months)
+        - label: Has issues or PRs
+        - label: Dependencies are up to date
+        - label: Purpose is still relevant
+        - label: Could be consolidated elsewhere
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: What should we do with this repo?
+      placeholder: |
+        - Keep active
+        - Archive
+        - Consolidate into [other repo]
+        - Document and maintain
+        - Delete

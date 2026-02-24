@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Control Tower Documentation
+    url: https://github.com/zebadee2kk/control-tower/blob/main/docs/OPERATING_SYSTEM.md
+    about: Read the operating system guide

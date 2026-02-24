@@ -1,0 +1,55 @@
+name: 💡 Idea Intake
+description: Capture a new idea or project proposal
+title: "[Idea]: "
+labels: ["state:triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Idea Intake Form
+        Use this to capture new ideas before they drift away. Keep it brief.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this solve?
+      placeholder: "Current situation causes pain/waste/missed opportunity..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired Outcome
+      description: What does success look like?
+      placeholder: "After this is done, we will have/be able to..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Initial Priority
+      description: First-pass priority assessment
+      options:
+        - p0 - Critical
+        - p1 - High
+        - p2 - Normal
+        - p3 - Parked
+    validations:
+      required: true
+
+  - type: input
+    id: budget
+    attributes:
+      label: Estimated Budget
+      description: Rough time/cost estimate
+      placeholder: "2 hours, £5, 50K tokens"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Links, references, background
+      placeholder: "Related to..."

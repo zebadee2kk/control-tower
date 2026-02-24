@@ -1,0 +1,62 @@
+name: ✅ Decision Required
+description: Something needs approval or direction
+title: "[Decision]: "
+labels: ["state:awaiting-decision", "gate:needs-approval"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Decision Gate
+        Use this when work is blocked pending a yes/no decision.
+
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision Needed
+      description: What needs to be decided?
+      placeholder: "Should we proceed with...?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: List the available choices
+      placeholder: |
+        A: Do X (pros/cons)
+        B: Do Y (pros/cons)
+        C: Do nothing (pros/cons)
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact if Approved
+      description: What happens if we say yes?
+      placeholder: "Time, cost, dependencies, outcomes..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risk if Wrong
+      description: What's the downside?
+      placeholder: "Cost of reversal, wasted effort, opportunity cost..."
+    validations:
+      required: true
+
+  - type: input
+    id: deadline
+    attributes:
+      label: Decision Deadline
+      description: When does this need an answer?
+      placeholder: "YYYY-MM-DD"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Background Context
+      description: Links to related issues, research, etc.
