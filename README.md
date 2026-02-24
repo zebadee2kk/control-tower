@@ -1,3 +1,22 @@
+# Bootstrap Script for Labels & Project
+
+The repository includes an idempotent script to automate the setup of GitHub labels and a Project v2 board:
+
+* **Location:** scripts/bootstrap-labels-project.sh
+* **Features:**
+	- Ensures all 16 standard labels (with exact names/colors from Issue #1)
+	- Creates a GitHub Project v2 board named "Control Tower" if missing
+	- Adds custom fields: Priority, Gate, Budget Cap, Spend-to-Date
+	- Links all open issues to the project
+	- (Manual step) Automation for moving issues to "Done" when closed
+
+**Usage:**
+
+```bash
+scripts/bootstrap-labels-project.sh
+```
+
+Requires: [gh CLI](https://cli.github.com/) with authentication and jq installed.
 # Control Tower
 
 A GitHub-native control plane for AI-assisted projects.
