@@ -1,5 +1,14 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Idea Intake
+    url: https://github.com/zebadee2kk/control-tower/issues/new?assignees=&labels=&template=idea-intake.yml
+    about: Propose a new idea or project
+  - name: Decision Required
+    url: https://github.com/zebadee2kk/control-tower/issues/new?assignees=&labels=&template=decision-required.yml
+    about: Open a decision gate for approval or direction
+  - name: Repo Recon
+    url: https://github.com/zebadee2kk/control-tower/issues/new?assignees=&labels=&template=repo-recon.yml
+    about: Evaluate an external repository
   - name: Control Tower Documentation
     url: https://github.com/zebadee2kk/control-tower/blob/main/docs/OPERATING_SYSTEM.md
     about: Read the operating system guide
