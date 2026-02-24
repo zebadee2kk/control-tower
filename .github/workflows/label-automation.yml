@@ -1,6 +1,7 @@
 # Label Automation Workflow
 # Implements label-driven state management for issues
 
+
 name: "Label Automation"
 
 on:
@@ -9,6 +10,7 @@ on:
       - labeled
       - unlabeled
       - closed
+  workflow_dispatch:
 
 permissions:
   issues: write
