@@ -1,0 +1,60 @@
+# Weekly Cost Rollup Workflow
+# Aggregates budget and cost data from issues updated in the past week
+
+name: "Weekly Cost Rollup"
+
+on:
+  schedule:
+    - cron: '0 18 * * 0'  # 6 PM UTC every Sunday
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  weekly-cost-rollup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate weekly cost and budget
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100
+            });
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const updatedIssues = issues.filter(issue => new Date(issue.updated_at) > weekAgo);
+            let totalHours = 0;
+            let totalCost = 0;
+            let overruns = [];
+            updatedIssues.forEach(issue => {
+              if (issue.body) {
+                const match = issue.body.match(/Budget: (\d+)h, £(\d+)/);
+                if (match) {
+                  const hours = parseInt(match[1], 10);
+                  const cost = parseInt(match[2], 10);
+                  totalHours += hours;
+                  totalCost += cost;
+                  if (cost > 100) { // Example overrun threshold
+                    overruns.push(`#${issue.number}: £${cost}`);
+                  }
+                }
+              }
+            });
+            let body = `## Weekly Cost Rollup\n`;
+            body += `\nTotal Hours: ${totalHours}\nTotal Cost: £${totalCost}\n`;
+            if (overruns.length) {
+              body += `\n### Budget Overruns\n` + overruns.join('\n');
+            }
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Weekly Cost Rollup (${now.toISOString().split('T')[0]})`,
+              body,
+              labels: ['state:report', 'cost:rollup']
+            });
