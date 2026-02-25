@@ -25,7 +25,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            github.rest.issues.update({
+            await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
@@ -39,7 +39,7 @@ jobs:
           script: |
             const hasDone = context.payload.issue.labels.some(l => l.name === 'state:done');
             if (!hasDone) {
-              github.rest.issues.addLabels({
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
@@ -52,7 +52,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,

@@ -24,12 +24,19 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
-            });
+            if (!context.payload.issue) {
+              return;
+            }
+
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100
+              }
+            );
             const buildCount = issues.filter(issue => issue.labels.some(l => l.name === 'state:build')).length;
             const researchCount = issues.filter(issue => issue.labels.some(l => l.name === 'state:research')).length;
             const maxWip = 3;
@@ -43,19 +50,24 @@ jobs:
               stateLabel = 'state:research';
             }
             if (exceeded) {
-              github.rest.issues.createComment({
+              const currentLabels = context.payload.issue.labels.map(label => label.name);
+              if (!currentLabels.includes(stateLabel)) {
+                return;
+              }
+
+              await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 body: `WIP limit reached. Current: ${stateLabel === 'state:build' ? buildCount : researchCount}. Max: ${maxWip}.`
               });
-              github.rest.issues.addLabels({
+              await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 labels: ['state:blocked']
               });
-              github.rest.issues.removeLabel({
+              await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
