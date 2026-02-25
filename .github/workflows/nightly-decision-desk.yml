@@ -3,6 +3,10 @@
 
 name: "Nightly Decision Desk"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 on:
   schedule:
     - cron: '0 21 * * *'  # 9 PM UTC = 9 PM GMT
