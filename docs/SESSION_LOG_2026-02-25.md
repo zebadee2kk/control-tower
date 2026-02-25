@@ -14,7 +14,7 @@
 
 ## Tests
 
-- Workflow dispatch tests not run from this workspace (requires GitHub auth and push of branch).
+- Triggered workflow_dispatch for Nightly Decision Desk, Weekly Cost Rollup, WIP Limit Check, and Label Automation on branch phase-2.5-bug-fixes.
 
 ---
 
