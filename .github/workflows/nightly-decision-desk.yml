@@ -16,33 +16,28 @@ jobs:
   nightly-decision-desk:
     runs-on: ubuntu-latest
     steps:
-      - name: Query issues needing approval and blocked
-        id: query
+      - name: Create Decision Desk issue and close previous
         uses: actions/github-script@v6
         with:
           script: |
-            const { data: issues } = await github.rest.issues.listForRepo({
+            const paginateIssues = (params) => github.paginate(
+              github.rest.issues.listForRepo,
+              { ...params, per_page: 100 }
+            );
+            const issues = await paginateIssues({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
+              state: 'open'
             });
             const approvalIssues = issues.filter(issue => issue.labels.some(l => l.name === 'gate:needs-approval'));
             const blockedIssues = issues.filter(issue => issue.labels.some(l => l.name === 'state:blocked'));
-            return { approvalIssues, blockedIssues };
-
-      - name: Create Decision Desk issue
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { approvalIssues, blockedIssues } = steps.query.outputs;
             const today = new Date().toISOString().split('T')[0];
             let body = `## Nightly Decision Desk (${today})\n`;
             body += `\n### Approval Needed\n`;
             body += approvalIssues.map(i => `- #${i.number}: ${i.title}`).join('\n') || 'None';
             body += `\n\n### Blocked\n`;
             body += blockedIssues.map(i => `- #${i.number}: ${i.title}`).join('\n') || 'None';
-            github.rest.issues.create({
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Decision Desk ${today}`,
@@ -50,25 +45,21 @@ jobs:
               labels: ['state:awaiting-decision', 'gate:needs-approval', 'p0']
             });
 
-      - name: Close previous Decision Desk issue
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { data: issues } = await github.rest.issues.listForRepo({
+            const decisionDeskIssues = await paginateIssues({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               labels: 'state:awaiting-decision',
-              per_page: 10
+              sort: 'created',
+              direction: 'desc'
             });
-            if (issues.length > 1) {
-              // Close all but the latest
-              for (let i = 0; i < issues.length - 1; i++) {
-                github.rest.issues.update({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issues[i].number,
-                  state: 'closed'
-                });
-              }
+
+            const toClose = decisionDeskIssues.slice(1);
+            for (const issue of toClose) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
             }

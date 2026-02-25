@@ -20,12 +20,15 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const { data: issues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'all',
-              per_page: 100
-            });
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                per_page: 100
+              }
+            );
             const now = new Date();
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
             const updatedIssues = issues.filter(issue => new Date(issue.updated_at) > weekAgo);
@@ -51,7 +54,7 @@ jobs:
             if (overruns.length) {
               body += `\n### Budget Overruns\n` + overruns.join('\n');
             }
-            github.rest.issues.create({
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `Weekly Cost Rollup (${now.toISOString().split('T')[0]})`,
