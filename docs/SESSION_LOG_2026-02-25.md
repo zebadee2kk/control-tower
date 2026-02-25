@@ -49,3 +49,28 @@
 ---
 
 **Session documented by Claude Code (claude-sonnet-4-6)**
+
+---
+
+## Session 3: Issue #35 Concurrency Fix (GitHub Copilot)
+
+**Date:** 2026-02-25
+**Goal:** Implement the remaining Phase 2.5 bug fix (workflow concurrency) and close Issue #35.
+
+### Actions Taken
+
+1. Added `concurrency` blocks to `nightly-decision-desk.yml` and `weekly-cost-rollup.yml`.
+2. Created branch `fix-bug-6-concurrency` and committed changes.
+3. Resolved GitHub CLI auth error by clearing invalid `GITHUB_TOKEN` and switching to the keyring account.
+4. Dispatched each workflow twice via `workflow_dispatch` to validate concurrent trigger behavior.
+5. Opened PR #40 and merged to `main`.
+
+### Tests
+
+- `gh workflow run nightly-decision-desk.yml` (x2)
+- `gh workflow run weekly-cost-rollup.yml` (x2)
+
+### Outcome
+
+- Bug #6 (concurrency) fixed and merged in PR #40.
+- Phase 2.5 critical bug list now 6/6 fixed.

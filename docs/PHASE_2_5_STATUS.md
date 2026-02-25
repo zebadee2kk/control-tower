@@ -9,7 +9,7 @@
 
 Phase 2.5 fixed 6 critical bugs identified in the Codex deep review (Issue #18). All fixes live in PR #21 and have been validated by Claude Code (Issue #22 test plan).
 
-### Bugs Fixed (5/6)
+### Bugs Fixed (6/6)
 
 | Bug | Workflow | Fix |
 |-----|----------|-----|
@@ -18,24 +18,13 @@ Phase 2.5 fixed 6 critical bugs identified in the Codex deep review (Issue #18).
 | Missing `await` | All 4 workflows | Added `await` to all 7 mutating API calls (update, addLabels, createComment, create, removeLabel) |
 | No pagination | `nightly-decision-desk.yml`, `wip-limit-check.yml`, `weekly-cost-rollup.yml` | Replaced single-page `listForRepo` with `github.paginate()` |
 | WIP scope | `wip-limit-check.yml` | Added two guards: `if (!context.payload.issue)` (dispatch safety) + `if (!currentLabels.includes(stateLabel))` (scope correctness) |
+| Concurrency control | `nightly-decision-desk.yml`, `weekly-cost-rollup.yml` | Added `concurrency` block with `group: ${{ github.workflow }}` and `cancel-in-progress: false` (PR #40) |
 
-### Known Remaining Bug (Bug #6)
+### Concurrency Status (Bug #6)
 
-**Concurrency control not implemented.** No `concurrency:` key was added.
+**Fixed:** `concurrency` added to `nightly-decision-desk.yml` and `weekly-cost-rollup.yml` in PR #40.
 
-**Impact:** Running `nightly-decision-desk` or `weekly-cost-rollup` twice simultaneously:
-- Creates duplicate report issues
-- Causes concurrent close attempts → `422 Validation Failed` on one run
-
-**Fix (2 lines per affected workflow):**
-```yaml
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
-```
-
-**Affected:** `nightly-decision-desk.yml`, `weekly-cost-rollup.yml`
-**Workaround:** Only one trigger source in production (cron schedule), so real-world concurrency risk is low but not zero.
+**Test:** Two manual `workflow_dispatch` triggers per workflow on `main` succeeded without duplicate creation errors.
 
 ---
 
@@ -44,9 +33,9 @@ concurrency:
 | Workflow | Trigger | Status | Notes |
 |----------|---------|--------|-------|
 | `label-automation.yml` | `issues: labeled/closed` | Production-ready ✅ | All 3 automated behaviors working |
-| `nightly-decision-desk.yml` | `schedule: 9PM UTC` + `workflow_dispatch` | Usable with caveat ⚠️ | Works correctly; missing concurrency key |
+| `nightly-decision-desk.yml` | `schedule: 9PM UTC` + `workflow_dispatch` | Production-ready ✅ | Concurrency guard added |
 | `wip-limit-check.yml` | `issues: labeled/opened/reopened` | Production-ready ✅ | WIP=3 enforced correctly |
-| `weekly-cost-rollup.yml` | `schedule: Sunday 6PM UTC` + `workflow_dispatch` | Usable with caution ⚠️ | No idempotency; no concurrency key |
+| `weekly-cost-rollup.yml` | `schedule: Sunday 6PM UTC` + `workflow_dispatch` | Usable with caution ⚠️ | No idempotency; concurrency guard added |
 
 ---
 
@@ -61,10 +50,6 @@ concurrency:
 
 ## Next Steps
 
-### Immediate (to fully close Issue #18)
-- [ ] Add `concurrency:` key to `nightly-decision-desk.yml` and `weekly-cost-rollup.yml`
-- [ ] Re-run test 2.4 (concurrent triggers) to confirm fix
-
 ### Follow-up
 - [ ] Implement cost rollup idempotency (check for existing rollup for current week before creating)
 - [ ] Decide on comment-based vs body-based cost tracking
@@ -78,5 +63,6 @@ concurrency:
 |-----|-------|--------|
 | Issue #18 | [Phase 2.5] Critical Workflow Bug Fixes | Open — partially resolved by PR #21 |
 | PR #21 | Fix 6 critical workflow bugs | Merged to main |
+| PR #40 | Add concurrency control to scheduled workflows | Merged to main |
 | Issue #22 | [Testing] Validate Phase 2.5 Bug Fixes | Results documented — 5/6 bugs confirmed fixed |
 | Issue #13 | Phase 2 Automation Pilot | In planning |
