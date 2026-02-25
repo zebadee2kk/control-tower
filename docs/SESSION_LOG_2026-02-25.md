@@ -15,6 +15,7 @@
 ## Tests
 
 - Triggered workflow_dispatch for Nightly Decision Desk, Weekly Cost Rollup, WIP Limit Check, and Label Automation on branch phase-2.5-bug-fixes.
+- Posted workflow log excerpts to PR #21.
 
 ---
 
