@@ -1,9 +1,9 @@
 # Bugs Found
 
 ## Critical
-1. `nightly-decision-desk` uses invalid cross-step output access (`steps.query.outputs`).
-2. Decision Desk cleanup logic can keep stale issue and close latest.
-3. Missing `await` on mutation calls across all workflows.
+1. ~~`nightly-decision-desk` uses invalid cross-step output access (`steps.query.outputs`).~~ ✅ Fixed in Phase 2.5 (PR #21)
+2. ~~Decision Desk cleanup logic can keep stale issue and close latest.~~ ✅ Fixed in Phase 2.5 (PR #21), enhanced in Bug #7 (PR #49)
+3. Missing `await` on mutation calls across all workflows. ✅ Fixed in Phase 2.5 (PR #21)
 
 ## High
 4. No pagination on repo issue queries.

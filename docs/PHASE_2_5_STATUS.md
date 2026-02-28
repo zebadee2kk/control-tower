@@ -1,7 +1,22 @@
 # Phase 2.5 Status — Control Tower Automation
 
-**Updated:** 2026-02-25
+**Updated:** 2026-02-28
 **Branch:** `phase-2.5-bug-fixes` → merged to `main`
+
+---
+
+## Recent Updates
+
+### Bug #7 Fixed (2026-02-28) — PR #49
+
+**Decision Desk Template & Enhanced Retention Logic**
+
+- ✅ Added decision template with 4 options (APPROVE/REJECT/DEFER/MORE INFO)
+- ✅ Enhanced retention logic to filter by title pattern (`startsWith('Decision Desk')`)
+- ✅ Added debug logging for closed Decision Desks
+- ✅ Tested with 3 manual workflow runs - all scenarios passed
+
+**Result:** Decision Desk workflow now provides clear decision guidance and more robust retention logic.
 
 ---
 
