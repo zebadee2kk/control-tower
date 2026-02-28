@@ -34,6 +34,21 @@ jobs:
               }
             );
             const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            const rollupTitle = `Weekly Cost Rollup (${today})`;
+            const existingRollups = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                labels: 'cost:rollup',
+                per_page: 100
+              }
+            );
+            if (existingRollups.some(i => i.title === rollupTitle)) {
+              return;
+            }
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
             const updatedIssues = issues.filter(issue => new Date(issue.updated_at) > weekAgo);
             let totalHours = 0;
@@ -61,7 +76,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Weekly Cost Rollup (${now.toISOString().split('T')[0]})`,
+              title: rollupTitle,
               body,
               labels: ['state:report', 'cost:rollup']
             });

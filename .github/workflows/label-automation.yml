@@ -4,6 +4,10 @@
 
 name: "Label Automation"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 on:
   issues:
     types:
@@ -52,9 +56,21 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: 'Added to Decision Desk.'
-            })
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                per_page: 100
+              }
+            );
+            const alreadyCommented = comments.some(c => c.body === 'Added to Decision Desk.');
+            if (!alreadyCommented) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: 'Added to Decision Desk.'
+              });
+            }

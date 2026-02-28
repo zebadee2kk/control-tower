@@ -3,6 +3,10 @@
 
 name: "WIP Limit Check"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 on:
   issues:
     types:
@@ -67,10 +71,14 @@ jobs:
                 issue_number: context.issue.number,
                 labels: ['state:blocked']
               });
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                name: stateLabel
-              });
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: stateLabel
+                });
+              } catch (e) {
+                if (e.status !== 404 && e.status !== 422) throw e;
+              }
             }
