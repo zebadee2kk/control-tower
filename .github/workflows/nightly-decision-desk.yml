@@ -36,20 +36,9 @@ jobs:
             const approvalIssues = issues.filter(issue => issue.labels.some(l => l.name === 'gate:needs-approval'));
             const blockedIssues = issues.filter(issue => issue.labels.some(l => l.name === 'state:blocked'));
             const today = new Date().toISOString().split('T')[0];
-            let body = `## Nightly Decision Desk (${today})\n`;
-            body += `\n### Approval Needed\n`;
-            body += approvalIssues.map(i => `- #${i.number}: ${i.title}`).join('\n') || 'None';
-            body += `\n\n### Blocked\n`;
-            body += blockedIssues.map(i => `- #${i.number}: ${i.title}`).join('\n') || 'None';
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Decision Desk ${today}`,
-              body,
-              labels: ['state:awaiting-decision', 'gate:needs-approval', 'p0']
-            });
-
-            const decisionDeskIssues = await paginateIssues({
+            
+            // Query and close old Decision Desks BEFORE creating new issue
+            const existingDecisionDesks = await paginateIssues({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
@@ -58,12 +47,49 @@ jobs:
               direction: 'desc'
             });
 
-            const toClose = decisionDeskIssues.slice(1);
-            for (const issue of toClose) {
+            // Filter to only Decision Desk issues
+            const oldDecisionDesks = existingDecisionDesks.filter(issue => 
+              issue.title.startsWith('Decision Desk')
+            );
+
+            // Close all old Decision Desks
+            for (const issue of oldDecisionDesks) {
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                state: 'closed'
+                state: 'closed',
+                state_reason: 'completed'
               });
+              console.log(`Closed old Decision Desk #${issue.number}`);
             }
+            
+            // Build new Decision Desk body
+            let body = `## Nightly Decision Desk (${today})\n`;
+            body += `\n### Approval Needed\n`;
+            body += approvalIssues.map(i => `- #${i.number}: ${i.title}`).join('\n') || 'None';
+            body += `\n\n### Blocked\n`;
+            body += blockedIssues.map(i => `- #${i.number}: ${i.title}`).join('\n') || 'None';
+            
+            // Add decision template
+            body += `\n\n---\n\n## Decision Actions\n\n`;
+            body += `For each issue above, add a comment with your decision:\n\n`;
+            body += `**Approval Decisions:**\n`;
+            body += `- ✅ **APPROVE** - Proceed with work\n`;
+            body += `- ⛔ **REJECT** - Do not proceed\n`;
+            body += `- 🤔 **DEFER** - Revisit later (specify when)\n`;
+            body += `- ❓ **MORE INFO** - Need clarification (specify what)\n\n`;
+            body += `**Example:**\n`;
+            body += `\`\`\`\nDecision on #14: DEFER\nReason: Waiting until after Phase 2\n\`\`\`\n\n`;
+            body += `**Blocked Issues:**\n`;
+            body += `- Review if blockers are resolved\n`;
+            body += `- Update \`state:blocked\` label if unblocked\n`;
+            
+            // Create new Decision Desk issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Decision Desk ${today}`,
+              body,
+              labels: ['state:awaiting-decision', 'gate:needs-approval', 'p0']
+            });
