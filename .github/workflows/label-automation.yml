@@ -14,7 +14,6 @@ on:
 
 permissions:
   issues: write
-  contents: read
 
 jobs:
   label-automation:
@@ -22,7 +21,7 @@ jobs:
     steps:
       - name: Close issue if labeled 'state:done'
         if: github.event.action == 'labeled' && github.event.label.name == 'state:done'
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
             await github.rest.issues.update({
@@ -34,7 +33,7 @@ jobs:
 
       - name: Add 'state:done' label if issue closed and missing
         if: github.event.action == 'closed'
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
             const hasDone = context.payload.issue.labels.some(l => l.name === 'state:done');
@@ -49,7 +48,7 @@ jobs:
 
       - name: Comment if labeled 'gate:needs-approval'
         if: github.event.action == 'labeled' && github.event.label.name == 'gate:needs-approval'
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
             await github.rest.issues.createComment({
