@@ -14,14 +14,13 @@ on:
 
 permissions:
   issues: write
-  contents: read
 
 jobs:
   wip-limit-check:
     runs-on: ubuntu-latest
     steps:
       - name: Check WIP limits
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
             if (!context.payload.issue) {
@@ -67,10 +66,19 @@ jobs:
                 issue_number: context.issue.number,
                 labels: ['state:blocked']
               });
-              await github.rest.issues.removeLabel({
+              // Re-fetch labels before removal to guard against concurrent label changes (Bug #6)
+              const freshIssue = await github.rest.issues.get({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number,
-                name: stateLabel
+                issue_number: context.issue.number
               });
+              const freshLabels = freshIssue.data.labels.map(l => l.name);
+              if (freshLabels.includes(stateLabel)) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: stateLabel
+                });
+              }
             }

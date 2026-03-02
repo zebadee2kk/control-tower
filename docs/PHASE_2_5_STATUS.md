@@ -1,11 +1,35 @@
 # Phase 2.5 Status — Control Tower Automation
 
-**Updated:** 2026-02-28
+**Updated:** 2026-03-01
 **Branch:** `phase-2.5-bug-fixes` → merged to `main`
 
 ---
 
 ## Recent Updates
+
+### Security Hardening + Bug #6 + Rollup Idempotency (2026-03-01) — Hardening PR
+
+**Action SHA pinning (P0)**
+- ✅ All 4 workflows now pin `actions/github-script` to immutable commit SHA `d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6`
+- ✅ `contents: read` permission removed from all 4 workflows (was unused; principle of least privilege)
+
+**Bug #6 Fixed — `removeLabel` race condition (P1)**
+- ✅ `wip-limit-check.yml`: re-fetches issue labels immediately before calling `removeLabel`; skips removal if label is already absent, preventing 422 errors from concurrent label changes
+
+**Weekly rollup idempotency (P1)**
+- ✅ `weekly-cost-rollup.yml`: computes ISO week key (e.g. `2026-W09`), queries for existing rollup with that title, and exits early if one already exists — prevents duplicates on manual reruns or scheduler retries
+- ✅ Rollup issue title format changed from `YYYY-MM-DD` to `YYYY-WXX` to match ISO week
+
+**Workflow status after this PR:**
+
+| Workflow | Status |
+|----------|--------|
+| `label-automation.yml` | Production-ready ✅ |
+| `nightly-decision-desk.yml` | Production-ready ✅ |
+| `wip-limit-check.yml` | Production-ready ✅ |
+| `weekly-cost-rollup.yml` | Production-ready ✅ (idempotency added) |
+
+---
 
 ### Bug #7 Fixed (2026-02-28) — PR #49
 
@@ -48,9 +72,9 @@ Phase 2.5 fixed 6 critical bugs identified in the Codex deep review (Issue #18).
 | Workflow | Trigger | Status | Notes |
 |----------|---------|--------|-------|
 | `label-automation.yml` | `issues: labeled/closed` | Production-ready ✅ | All 3 automated behaviors working |
-| `nightly-decision-desk.yml` | `schedule: 9PM UTC` + `workflow_dispatch` | Production-ready ✅ | Concurrency guard added |
-| `wip-limit-check.yml` | `issues: labeled/opened/reopened` | Production-ready ✅ | WIP=3 enforced correctly |
-| `weekly-cost-rollup.yml` | `schedule: Sunday 6PM UTC` + `workflow_dispatch` | Usable with caution ⚠️ | No idempotency; concurrency guard added |
+| `nightly-decision-desk.yml` | `schedule: 9PM UTC` + `workflow_dispatch` | Production-ready ✅ | Concurrency guard, SHA-pinned |
+| `wip-limit-check.yml` | `issues: labeled/opened/reopened` | Production-ready ✅ | WIP=3 enforced, removeLabel race fixed |
+| `weekly-cost-rollup.yml` | `schedule: Sunday 6PM UTC` + `workflow_dispatch` | Production-ready ✅ | ISO week idempotency added |
 
 ---
 
@@ -66,9 +90,9 @@ Phase 2.5 fixed 6 critical bugs identified in the Codex deep review (Issue #18).
 ## Next Steps
 
 ### Follow-up
-- [ ] Implement cost rollup idempotency (check for existing rollup for current week before creating)
+- [x] ~~Implement cost rollup idempotency~~ — Done 2026-03-01 (ISO week key)
 - [ ] Decide on comment-based vs body-based cost tracking
-- [ ] Gate comment deduplication (check for existing comment before posting)
+- [ ] Gate comment deduplication (Bug #8 — check for existing comment before posting)
 
 ---
 

@@ -14,16 +14,43 @@ on:
 
 permissions:
   issues: write
-  contents: read
 
 jobs:
   weekly-cost-rollup:
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate weekly cost and budget
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
+            const now = new Date();
+
+            // ISO week key (YYYY-WXX) for idempotency — prevents duplicate issues on reruns
+            const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            const weekKey = `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+            const rollupTitle = `Weekly Cost Rollup (${weekKey})`;
+
+            // Skip if a rollup for this week already exists
+            const existingRollups = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                labels: 'cost:rollup',
+                per_page: 100
+              }
+            );
+            const alreadyExists = existingRollups.some(issue => issue.title === rollupTitle);
+            if (alreadyExists) {
+              console.log(`Rollup for ${weekKey} already exists — skipping.`);
+              return;
+            }
+
             const issues = await github.paginate(
               github.rest.issues.listForRepo,
               {
@@ -33,7 +60,6 @@ jobs:
                 per_page: 100
               }
             );
-            const now = new Date();
             const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
             const updatedIssues = issues.filter(issue => new Date(issue.updated_at) > weekAgo);
             let totalHours = 0;
@@ -61,7 +87,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Weekly Cost Rollup (${now.toISOString().split('T')[0]})`,
+              title: rollupTitle,
               body,
               labels: ['state:report', 'cost:rollup']
             });
