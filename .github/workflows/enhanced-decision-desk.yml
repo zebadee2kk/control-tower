@@ -1,0 +1,46 @@
+name: "Enhanced Decision Desk"
+
+# Runs nightly at 21:10 UTC (10 min after the existing JS Decision Desk)
+# so there's no race condition when closing old issues.
+# Can also be triggered manually via workflow_dispatch.
+
+on:
+  schedule:
+    - cron: '10 21 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  enhanced-decision-desk:
+    name: Run Enhanced Decision Desk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Enhanced Decision Desk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OLLAMA_HOST: ${{ secrets.OLLAMA_HOST }}
+          AI_COST_TRACKER_URL: ${{ secrets.AI_COST_TRACKER_URL }}
+          AI_COST_TRACKER_TOKEN: ${{ secrets.AI_COST_TRACKER_TOKEN }}
+        run: python -m src.run_enhanced_desk

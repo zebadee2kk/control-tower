@@ -258,6 +258,63 @@ class DecisionDesk:
         ]
         return "\n".join(lines)
 
+    # ------------------------------------------------------------------
+    # GitHub issue posting
+    # ------------------------------------------------------------------
+
+    _ISSUE_LABEL = "enhanced-decision-desk"
+    _ISSUE_TITLE_PREFIX = "Enhanced Decision Desk"
+
+    def post_report(self, body: str) -> Any:
+        """
+        Close any previously open Enhanced Decision Desk issues, then create
+        a new one with ``body`` as its content.
+
+        The issue is tagged with ``enhanced-decision-desk`` and
+        ``state:awaiting-decision`` labels (the label must exist on the repo).
+        Returns the newly created ``github.Issue.Issue`` object.
+        """
+        today = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+
+        # Close old enhanced desk issues
+        old_issues = list(
+            self.repo.get_issues(
+                state="open",
+                labels=[self._ISSUE_LABEL],
+            )
+        )
+        for old in old_issues:
+            if old.title.startswith(self._ISSUE_TITLE_PREFIX) and not old.pull_request:
+                old.edit(state="closed", state_reason="completed")
+                logger.info("Closed old Enhanced Decision Desk #%s", old.number)
+
+        # Ensure the label exists (create if missing)
+        self._ensure_label(
+            self._ISSUE_LABEL,
+            color="0075ca",
+            description="Auto-generated enhanced decision desk issue",
+        )
+
+        # Create new issue
+        new_issue = self.repo.create_issue(
+            title=f"{self._ISSUE_TITLE_PREFIX} {today}",
+            body=body,
+            labels=[self._ISSUE_LABEL, "state:awaiting-decision"],
+        )
+        logger.info("Created Enhanced Decision Desk issue #%s", new_issue.number)
+        return new_issue
+
+    def _ensure_label(self, name: str, color: str, description: str) -> None:
+        """Create a label on the repo if it doesn't already exist."""
+        try:
+            self.repo.get_label(name)
+        except Exception:  # noqa: BLE001 — GithubException subclass
+            try:
+                self.repo.create_label(name=name, color=color, description=description)
+                logger.info("Created label '%s'", name)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not create label '%s': %s", name, exc)
+
 
 # ---------------------------------------------------------------------------
 # CLI entry point
