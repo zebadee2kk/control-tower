@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Test / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
