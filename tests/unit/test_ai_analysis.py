@@ -12,7 +12,9 @@ from unittest.mock import patch
 
 import pytest
 
+import src.ai_analysis as ai_analysis
 from src.ai_analysis import (
+    _call_ollama,
     _heuristic_score,
     classify_urgency,
     score_issue,
@@ -69,6 +71,35 @@ def unlabelled_issue() -> dict[str, Any]:
         "body": "The search endpoint takes 3s to respond.",
         "updated_at": "2026-02-28T09:00:00+00:00",
     }
+
+
+# ---------------------------------------------------------------------------
+# _call_ollama — empty/missing OLLAMA_HOST guard
+# ---------------------------------------------------------------------------
+
+class TestCallOllamaHostGuard:
+    def test_raises_runtime_error_when_host_is_empty_string(self) -> None:
+        """Regression: empty OLLAMA_HOST must raise RuntimeError (not ValueError)
+        so that classify_urgency's except block catches it and falls back to heuristic."""
+        original = ai_analysis.OLLAMA_HOST
+        try:
+            ai_analysis.OLLAMA_HOST = ""
+            with pytest.raises(RuntimeError, match="OLLAMA_HOST is not configured"):
+                _call_ollama("test prompt")
+        finally:
+            ai_analysis.OLLAMA_HOST = original
+
+    def test_classify_urgency_falls_back_when_host_is_empty(
+        self, critical_issue: dict[str, Any]
+    ) -> None:
+        """End-to-end: empty OLLAMA_HOST → heuristic urgency, no crash."""
+        original = ai_analysis.OLLAMA_HOST
+        try:
+            ai_analysis.OLLAMA_HOST = ""
+            result = classify_urgency(critical_issue)
+        finally:
+            ai_analysis.OLLAMA_HOST = original
+        assert result == "critical"  # heuristic for priority:critical
 
 
 # ---------------------------------------------------------------------------

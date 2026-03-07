@@ -76,8 +76,11 @@ def _call_ollama(prompt: str, model: str = OLLAMA_MODEL, timeout: int = 30) -> s
     Call the local Ollama API (non-streaming).
 
     Returns the text content of the response, or raises ``RuntimeError``
-    if the request fails.
+    if the request fails or ``OLLAMA_HOST`` is not configured.
     """
+    if not OLLAMA_HOST:
+        raise RuntimeError("OLLAMA_HOST is not configured — skipping Ollama call")
+
     payload = json.dumps(
         {"model": model, "prompt": prompt, "stream": False}
     ).encode()
