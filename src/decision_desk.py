@@ -38,6 +38,7 @@ def _issue_to_dict(issue: Issue) -> dict[str, Any]:
         "body": issue.body or "",
         "url": issue.html_url,
         "assignees": [a.login for a in issue.assignees],
+        "node_id": issue.node_id,
     }
 
 
