@@ -33,6 +33,7 @@ load_dotenv(os.path.expanduser("~/.env"), override=True)
 from src.ai_analysis import score_issues_batch  # noqa: E402
 from src.decision_desk import DecisionDesk  # noqa: E402
 from src.integrations.cost_tracker import CostTrackerClient  # noqa: E402
+from src.integrations.portfolio_scanner import PortfolioScanner, PortfolioSummary  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,6 +49,58 @@ _AI_SCORE_LIMIT = 15
 # ---------------------------------------------------------------------------
 # Enhanced Markdown renderer
 # ---------------------------------------------------------------------------
+
+def _render_portfolio_section(summary: PortfolioSummary) -> list[str]:
+    """Render the portfolio health summary as Markdown lines.
+
+    Returns an empty list if the scan failed or produced no repos.
+    """
+    if summary.error or summary.total_repos == 0:
+        return []
+
+    grade_emoji = {"A": "🟢", "B": "🟡", "C": "🟠", "D": "🔴", "F": "🔴"}.get(
+        summary.portfolio_grade, "⚪"
+    )
+
+    lines = [
+        "## 📊 Portfolio Health",
+        "",
+        "| Repos | Avg Score | Grade | Healthy | Critical | Open Issues |",
+        "|-------|-----------|-------|---------|----------|-------------|",
+        (
+            f"| {summary.total_repos} "
+            f"| {summary.avg_health_score} "
+            f"| {grade_emoji} **{summary.portfolio_grade}** "
+            f"| {summary.healthy_count} "
+            f"| {summary.critical_count} "
+            f"| {summary.total_open_issues} |"
+        ),
+        "",
+    ]
+
+    if summary.top_repos:
+        lines += ["**⚠️ Repos needing attention** *(lowest health scores)*", ""]
+        for repo in summary.top_repos:
+            grade_e = {"A": "🟢", "B": "🟡", "C": "🟠", "D": "🔴", "F": "🔴"}.get(
+                repo.health_grade, "⚪"
+            )
+            archived_tag = " `archived`" if repo.archived else ""
+            private_tag = " `private`" if repo.private else ""
+            lines.append(
+                f"- [{repo.name}]({repo.url}){archived_tag}{private_tag} — "
+                f"**{repo.health_score}** {grade_e} {repo.health_grade} "
+                f"({repo.open_issues} issues, {repo.days_since_update}d stale)"
+            )
+        lines.append("")
+
+    lines += [
+        f"*Scanned {summary.total_repos} repos at {summary.scan_timestamp[:16]} UTC*",
+        "",
+        "---",
+        "",
+    ]
+    return lines
+
 
 def _render_ai_section(scored: list[dict[str, Any]]) -> list[str]:
     """Render the AI scoring table as Markdown."""
@@ -85,20 +138,36 @@ def render_enhanced_report(
     report: dict[str, Any],
     desk: DecisionDesk,
     scored: list[dict[str, Any]],
+    portfolio: PortfolioSummary | None = None,
 ) -> str:
-    """
-    Combine the standard Decision Desk Markdown with the AI scoring table.
-    """
-    # Start with the standard report body
-    base_md = desk.render_markdown(report)
+    """Combine portfolio summary, standard Decision Desk, and AI scoring table.
 
-    # Append AI section
+    Args:
+        report:    Structured report dict from :meth:`DecisionDesk.build_report`.
+        desk:      :class:`DecisionDesk` instance (for Markdown rendering).
+        scored:    AI-scored issue dicts from :func:`score_issues_batch`.
+        portfolio: Optional portfolio health summary; omitted if ``None``.
+
+    Returns:
+        Full Markdown string ready to post as a GitHub issue body.
+    """
+    sections: list[str] = []
+
+    # Portfolio section (prepended — most strategic view first)
+    if portfolio is not None:
+        portfolio_lines = _render_portfolio_section(portfolio)
+        if portfolio_lines:
+            sections.append("\n".join(portfolio_lines))
+
+    # Standard Decision Desk triage
+    sections.append(desk.render_markdown(report))
+
+    # AI scoring table
     ai_lines = _render_ai_section(scored)
     if ai_lines:
-        ai_block = "\n".join(["", "---", ""] + ai_lines)
-        return base_md + ai_block
+        sections.append("\n".join(["", "---", ""] + ai_lines))
 
-    return base_md
+    return "\n".join(sections)
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +183,21 @@ def main() -> None:
         sys.exit(1)
 
     logger.info("Starting Enhanced Decision Desk for %s", repo_name)
+
+    # --- Portfolio scan (Phase 3B) ---
+    portfolio: PortfolioSummary | None = None
+    try:
+        scanner = PortfolioScanner(token=token)
+        repos = scanner.scan()
+        portfolio = scanner.summarise(repos)
+        logger.info(
+            "Portfolio scan: %d repos, avg score %.1f (%s)",
+            portfolio.total_repos,
+            portfolio.avg_health_score,
+            portfolio.portfolio_grade,
+        )
+    except Exception as exc:  # noqa: BLE001 — portfolio is bonus; never block the main report
+        logger.warning("Portfolio scan skipped: %s", exc)
 
     # --- Build report ---
     desk = DecisionDesk(Github(token), repo_name)
@@ -147,7 +231,7 @@ def main() -> None:
         scored = []
 
     # --- Render enhanced report ---
-    body = render_enhanced_report(report, desk, scored)
+    body = render_enhanced_report(report, desk, scored, portfolio=portfolio)
 
     # --- Post to GitHub ---
     new_issue = desk.post_report(body)
