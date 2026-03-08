@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -33,7 +34,14 @@ load_dotenv(os.path.expanduser("~/.env"), override=True)
 from src.ai_analysis import score_issues_batch  # noqa: E402
 from src.decision_desk import DecisionDesk  # noqa: E402
 from src.integrations.cost_tracker import CostTrackerClient  # noqa: E402
-from src.integrations.portfolio_scanner import PortfolioScanner, PortfolioSummary  # noqa: E402
+from src.integrations.portfolio_scanner import (  # noqa: E402
+    PortfolioScanner,
+    PortfolioSummary,
+)
+from src.integrations.projects_sync import (  # noqa: E402
+    REPO_TO_TRACK,
+    ProjectsSync,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,6 +52,34 @@ logger = logging.getLogger(__name__)
 
 # How many issues to score with AI (caps cost; remainder still appears in report)
 _AI_SCORE_LIMIT = 15
+
+
+# ---------------------------------------------------------------------------
+# Helper: Extract PAT from git-credentials
+# ---------------------------------------------------------------------------
+
+def _get_derek_pat() -> str | None:
+    """Extract derek-ai-dev PAT from ~/.git-credentials.
+
+    Returns the PAT string if found, None otherwise.
+    """
+    try:
+        creds_path = Path.home() / ".git-credentials"
+        if not creds_path.exists():
+            return None
+
+        with open(creds_path, encoding="utf-8") as f:
+            for line in f:
+                if "derek-ai-dev" in line:
+                    # Format: https://derek-ai-dev:TOKEN@github.com
+                    parts = line.split(":")
+                    if len(parts) >= 3:
+                        token = parts[2].split("@")[0]
+                        return token.strip()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not read git-credentials: %s", exc)
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +272,75 @@ def main() -> None:
     # --- Post to GitHub ---
     new_issue = desk.post_report(body)
     logger.info("Enhanced Decision Desk posted: %s", new_issue.html_url)
+
+    # --- Sync to GitHub Projects v2 (Phase 3C) ---
+    # This must not block the main report, so wrap in try/except
+    try:
+        pat = _get_derek_pat()
+        if pat:
+            sync = ProjectsSync(pat)
+
+            # Extract repo name (e.g., "zebadee2kk/control-tower" → "control-tower")
+            repo_short_name = repo_name.split("/")[-1]
+            track = REPO_TO_TRACK.get(repo_short_name, "other")
+
+            # Collect all issues we saw during the run
+            all_issues_seen: set[str] = set()
+            for issue_list in [
+                report["needs_approval"],
+                report["blocked"],
+                report["high_priority"],
+                report["stale"],
+            ]:
+                for issue in issue_list:
+                    all_issues_seen.add(issue["node_id"])
+
+            # 1. Sync decision-related issues (needs approval + awaiting decision)
+            decision_issues = report["needs_approval"]
+            for issue in decision_issues:
+                try:
+                    sync.add_issue_to_decisions(issue["node_id"], source="Decision Desk")
+                    logger.debug(
+                        "Synced decision issue #%d (%s)",
+                        issue["number"],
+                        issue["node_id"],
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Failed to sync decision issue #%d: %s", issue["number"], exc)
+
+            # 2. Sync blocked issues (with Source=Blocked Issue)
+            blocked_issues = report["blocked"]
+            for issue in blocked_issues:
+                try:
+                    sync.add_issue_to_decisions(issue["node_id"], source="Blocked Issue")
+                    logger.debug(
+                        "Synced blocked issue #%d (%s)",
+                        issue["number"],
+                        issue["node_id"],
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Failed to sync blocked issue #%d: %s", issue["number"], exc)
+
+            # 3. Sync all issues seen in run to Ecosystem Development with Track
+            for node_id in all_issues_seen:
+                try:
+                    item_id = sync.add_issue_to_ecosystem(node_id)
+                    if item_id:
+                        sync.set_ecosystem_track(item_id, track)
+                        logger.debug("Synced ecosystem issue %s with track %s", node_id, track)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Failed to sync ecosystem issue %s: %s", node_id, exc)
+
+            logger.info(
+                "Projects sync complete: %d decision, %d blocked, %d ecosystem issues",
+                len(decision_issues),
+                len(blocked_issues),
+                len(all_issues_seen),
+            )
+        else:
+            logger.warning("Could not find derek-ai-dev PAT — skipping Projects sync")
+    except Exception as exc:  # noqa: BLE001 — sync must never block the main report
+        logger.warning("Projects sync failed (non-blocking): %s", exc)
 
     # --- Log costs (optional, graceful degradation) ---
     tracker = CostTrackerClient()
