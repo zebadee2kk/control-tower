@@ -45,6 +45,37 @@ Before doing anything, read these files in order:
 | Destructive routing changes | Human approval required |
 | Scheduling / triggers | n8n workflow — not Python here |
 | Secrets | Vaultwarden — never in code |
+| n8n workflow design or debugging | Use `n8n-workflow-engineering` skill from `vm-claude-agents` |
+| Agent task packaging | Use `agent-handoff-and-runbooks` skill from `vm-claude-agents` |
+| Repo tier decisions | Use `github-portfolio-management` skill from `vm-claude-agents` |
+
+---
+
+## Portfolio digest workflow
+
+The Weekly Portfolio Digest n8n workflow reads `docs/portfolio-map.md` as its source of truth for repo tiers. Keep this file current — stale tier data causes misdirected digest summaries.
+
+**Tier definitions:**
+
+| Tier | Meaning | Max active |
+|---|---|---|
+| ACTIVE | Receiving regular commits and attention this sprint | 3 repos |
+| MAINTAIN | Stable; only bug fixes and dependency updates | Unlimited |
+| PARKED | No planned work; read-only | Unlimited |
+
+When a repo moves tier, update `docs/portfolio-map.md` AND open a tracking issue here with the reason. One-in-one-out rule applies to ACTIVE tier.
+
+---
+
+## Active Claude skills
+
+The following skills are available in `vm-claude-agents/claude-skills/`. Reference them by name when starting relevant tasks:
+
+| Skill | When to use |
+|---|---|
+| `n8n-workflow-engineering` | Designing, debugging, or exporting n8n workflows |
+| `agent-handoff-and-runbooks` | Structuring task packets for cross-repo or cross-agent handoff |
+| `github-portfolio-management` | Repo triage, tier decisions, ACTIVE/MAINTAIN/PARKED management |
 
 ---
 
@@ -139,6 +170,8 @@ control-tower is primarily a documentation-and-routing repo. It holds the canoni
 | Portfolio map | The master list of all repos with their ACTIVE/MAINTAIN/PARKED tier |
 | Handoff protocol | The structured format for passing task packets between repos and agents |
 | Routing | Deciding which repo or agent should own a given piece of work |
+| Skill | A CLAUDE.md-style instruction file in `vm-claude-agents/claude-skills/` |
+| n8n | The workflow automation layer; references this repo for portfolio state |
 
 ---
 
