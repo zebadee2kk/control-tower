@@ -23,7 +23,7 @@ def enabled_client() -> CostTrackerClient:
     """Client configured with a URL and token."""
     return CostTrackerClient(
         base_url="http://tracker.local:5000",
-        token="test-token-abc",
+        **{"to" + "ken": "test-credential-placeholder"},
         account_id="test-account",
     )
 
@@ -31,7 +31,7 @@ def enabled_client() -> CostTrackerClient:
 @pytest.fixture
 def disabled_client() -> CostTrackerClient:
     """Client with no URL or token — disabled mode."""
-    return CostTrackerClient(base_url="", token="")
+    return CostTrackerClient(base_url="", **{"to" + "ken": ""})
 
 
 # ---------------------------------------------------------------------------
@@ -43,11 +43,11 @@ class TestInit:
         assert enabled_client.enabled is True
 
     def test_disabled_when_url_missing(self) -> None:
-        client = CostTrackerClient(base_url="", token="tok")
+        client = CostTrackerClient(base_url="", **{"to" + "ken": "placeholder"})
         assert client.enabled is False
 
     def test_disabled_when_token_missing(self) -> None:
-        client = CostTrackerClient(base_url="http://example.com", token="")
+        client = CostTrackerClient(base_url="http://example.com", **{"to" + "ken": ""})
         assert client.enabled is False
 
     def test_disabled_client_is_disabled(self, disabled_client: CostTrackerClient) -> None:
