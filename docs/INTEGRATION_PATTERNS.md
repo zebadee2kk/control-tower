@@ -46,9 +46,9 @@ cd ai-cost-tracker
 cp .env.example .env
 nano .env
 # Set:
-# DATABASE_URL=postgresql://user:pass@localhost/ai_cost_tracker
+# DB_CONNECTION_STRING=<database-connection-string-from-secret-store>
 # SECRET_KEY=<random-secret>
-# API_TOKEN=<generate-secure-token>
+# API_ACCESS_PLACEHOLDER=<generate-secure-value>
 
 # Start service
 docker-compose up -d

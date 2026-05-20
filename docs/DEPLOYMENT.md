@@ -191,7 +191,7 @@ sudo nano .env
 
 ```bash
 # Database
-DATABASE_URL=postgresql://ai_cost_tracker:SecurePassword123@postgres:5432/ai_cost_tracker
+DB_CONNECTION_STRING=<database-connection-string-from-secret-store>
 
 # Security
 SECRET_KEY=<generate-with-openssl-rand-hex-32>
