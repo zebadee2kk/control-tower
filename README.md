@@ -1,5 +1,12 @@
 # Control Tower
 
+## Repository status
+
+Active internal development for this code has been consolidated into `zebadee2kk/agent-toolkit/control-tower/`.
+
+This public source repository is retained as a public reference unless Richard separately approves a different public-source lifecycle action. Do not archive this public repo automatically.
+
+
 **AI-Orchestrated Project Governance Platform**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
