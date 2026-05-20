@@ -96,7 +96,7 @@ FLASK_ENV=development
 SECRET_KEY=<generated-from-step-above>
 
 # Database
-DATABASE_URL=postgresql://postgres:postgres@db:5432/ai_cost_tracker
+DB_CONNECTION_STRING=<database-connection-string-from-secret-store>
 
 # Encryption
 ENCRYPTION_KEY=<generated-from-step-above>

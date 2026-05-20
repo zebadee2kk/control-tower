@@ -35,7 +35,7 @@ cp .env.example .env
 Edit `.env` with:
 - ENCRYPTION_KEY from Step 2
 - SECRET_KEY from Step 2
-- DATABASE_URL=postgresql://postgres:postgres@db:5432/ai_cost_tracker
+- DB_CONNECTION_STRING=<database-connection-string-from-secret-store>
 - REACT_APP_API_URL=http://localhost:5000
 
 ### ☑️ Step 4: Start Services (5 min)

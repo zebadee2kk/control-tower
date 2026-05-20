@@ -71,11 +71,11 @@ def _get_derek_pat() -> str | None:
         with open(creds_path, encoding="utf-8") as f:
             for line in f:
                 if "derek-ai-dev" in line:
-                    # Format: https://derek-ai-dev:TOKEN@github.com
+                    # Format: git credential URL with the secret segment redacted
                     parts = line.split(":")
                     if len(parts) >= 3:
-                        token = parts[2].split("@")[0]
-                        return token.strip()
+                        credential_value = parts[2].split("@")[0]
+                        return credential_value.strip()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not read git-credentials: %s", exc)
 
