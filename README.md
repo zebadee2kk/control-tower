@@ -2,15 +2,15 @@
 
 ## Repository status
 
-Active internal development for this code has been consolidated into `zebadee2kk/agent-toolkit/control-tower/`.
+The internal canonical copy for active WorkOS development now lives at `zebadee2kk/agent-toolkit/control-tower/`.
 
-This public source repository is retained as a public reference unless Richard separately approves a different public-source lifecycle action. Do not archive this public repo automatically.
+This public repository remains public and available as a reference source. Do not archive it, delete its content, or change repository settings unless Richard separately approves a different lifecycle action.
 
 
 **AI-Orchestrated Project Governance Platform**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-active_development-blue.svg)
+![Status](https://img.shields.io/badge/status-public_reference-blue.svg)
 
 ---
 
@@ -67,7 +67,7 @@ This is what responsible AI-assisted operations looks like in practice.
 
 ## Status
 
-Active development. Decision Desk, cost tracking, label automation, and WIP limits are operational. Full 16-repo portfolio view and cross-repo dependency tracking are in active build.
+Public reference status. Internal canonical development continues in `zebadee2kk/agent-toolkit/control-tower/`; this repository remains public and should not be archived or deleted without separate approval.
 
 ---
 
